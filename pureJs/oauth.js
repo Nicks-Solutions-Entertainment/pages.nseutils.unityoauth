@@ -94,6 +94,41 @@ function generateCodeChallenge(codeVerifier) {
     });
 }
 
+function GetOauthToken2(redirectedUrl){
+    const urlencoded = new URL(redirectedUrl);
+
+    const code = urlencoded.searchParams.get('code');
+    const error = urlencoded.searchParams.get('error');
+
+    if(error!==null)
+        throw new Error('Error in Oauth: ' + error);
+    console.log('code:', code);
+
+    const curlCommand = `
+curl -X POST ${url} \\
+  -H "Content-Type: application/x-www-form-urlencoded" \\
+  -H "Origin: ${origin}" \\
+  -d "client_id=${clientId}" \\
+  -d "redirect_uri=${encodeURIComponent(redirectUri)}" \\
+  -d "grant_type=authorization_code" \\
+  -d "code=${code}" \\
+  -d "code_verifier=${codeVerifier}"
+    `.trim();
+
+    console.log('Executing curl command:\n', curlCommand);
+
+    exec(curlCommand, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`exec error: ${error.message}`);
+            return;
+        }
+        if (stderr) {
+            console.error(`stderr: ${stderr}`);
+        }
+        console.log(`stdout: ${stdout}`);
+    });
+}
+
 function GetOauthToken(redirectedUrl){
     const urlencoded = new URL(redirectedUrl);
 
