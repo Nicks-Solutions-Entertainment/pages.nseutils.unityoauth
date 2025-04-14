@@ -106,7 +106,7 @@ function GetOauthToken2(redirectedUrl){
     console.log('code:', code);
 
     const curlCommand = `
-curl -X POST ${url} \\
+curl -X POST ${accessTokenUrl} \\
   -H "Content-Type: application/x-www-form-urlencoded" \\
   -H "Origin: ${origin}" \\
   -d "client_id=${clientId}" \\
