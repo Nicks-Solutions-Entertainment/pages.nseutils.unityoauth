@@ -1,4 +1,5 @@
-const { exec } = require('child_process');
+
+
 let windowObjectReference = null;
 let previousUrl = null;
 
@@ -17,8 +18,8 @@ var codeChallenge = '';
 function RegisterOpenWindowCallback(){
     window.addEventListener('message', (event) => {
         console.log('Popup URL:', event.data);
-        //GetOauthToken(event.data);
-        GetOauthToken2(event.data);
+        GetOauthToken(event.data);
+        // GetOauthToken2(event.data);
     });
 
     console.log('BANANA');
@@ -30,6 +31,10 @@ async function PrepareOauth (){
     // window.addEventListener('beforeunload', (event) => {
     //     SendMessageToApp();
     // });
+
+    
+    console.log('codeVerifier:', codeVerifier);
+    console.log('codeChallenge:', codeChallenge);
 }
 
 function Signin(){
@@ -95,41 +100,6 @@ function generateCodeChallenge(codeVerifier) {
     });
 }
 
-function GetOauthToken2(redirectedUrl){
-    const urlencoded = new URL(redirectedUrl);
-
-    const code = urlencoded.searchParams.get('code');
-    const error = urlencoded.searchParams.get('error');
-
-    if(error!==null)
-        throw new Error('Error in Oauth: ' + error);
-    console.log('code:', code);
-
-    const curlCommand = `
-curl -X POST ${accessTokenUrl} \\
-  -H "Content-Type: application/x-www-form-urlencoded" \\
-  -H "Origin: ${origin}" \\
-  -d "client_id=${clientId}" \\
-  -d "redirect_uri=${encodeURIComponent(redirectUri)}" \\
-  -d "grant_type=authorization_code" \\
-  -d "code=${code}" \\
-  -d "code_verifier=${codeVerifier}"
-    `.trim();
-
-    console.log('Executing curl command:\n', curlCommand);
-
-    exec(curlCommand, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`exec error: ${error.message}`);
-            return;
-        }
-        if (stderr) {
-            console.error(`stderr: ${stderr}`);
-        }
-        console.log(`stdout: ${stdout}`);
-    });
-}
-
 function GetOauthToken(redirectedUrl){
     const urlencoded = new URL(redirectedUrl);
 
@@ -140,21 +110,23 @@ function GetOauthToken(redirectedUrl){
         throw new Error('Error in Oauth: ' + error);
     console.log('code:', code);
 
-
-    const body = new URLSearchParams({
+    const bodyContent = {
         client_id: clientId,
         redirect_uri: redirectUri,
         grant_type: 'authorization_code',
         code: code,
         code_verifier: codeVerifier,
-    });
-
+    };
+    const body = new URLSearchParams(bodyContent);
+    const _bodyParams = body.toString();
+    console.dir( bodyContent);
+// return;
     fetch(accessTokenUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: body.toString()
+        body: _bodyParams
     })
     .then(response => response.json().then(data => {
         if (!response.ok) {
@@ -169,7 +141,48 @@ function GetOauthToken(redirectedUrl){
     });
 }
 
+function GetOauthToken2(redirectedUrl){
+    const urlencoded = new URL(redirectedUrl);
+
+    const code = urlencoded.searchParams.get('code');
+    const error = urlencoded.searchParams.get('error');
+
+    if(error!==null)
+        throw new Error('Error in Oauth: ' + error);
+    console.log('code:', code);
+
+
+    const params = {
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+        code: code,
+        code_verifier: codeVerifier,
+    };
+
+    console.log('token_request_params:',params);
+    var request = new XMLHttpRequest();
+    request.open('POST', accessTokenUrl, true);
+    request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
+    request.onload = function() {
+        var body = {};
+        try {
+            body = JSON.parse(request.response);
+        } catch(e) {}
+
+        if(request.status == 200) {
+            //success(request, body);
+        } else {
+            //error(request, body);
+        }
+        console.dir('Token response:', body);
+    }
+    request.onerror = function() {
+        error(request, {});
+    }
+    var body = Object.keys(params).map(key => key + '=' + params[key]).join('&');
+    request.send(body);
+}
+
 PrepareOauth();
 
-console.log('codeVerifier:', codeVerifier);
-console.log('codeChallenge:', codeChallenge);
