@@ -17,7 +17,8 @@ var codeChallenge = '';
 function RegisterOpenWindowCallback(){
     window.addEventListener('message', (event) => {
         console.log('Popup URL:', event.data);
-        GetOauthToken(event.data);
+        //GetOauthToken(event.data);
+        GetOauthToken2(event.data);
     });
 
     console.log('BANANA');
